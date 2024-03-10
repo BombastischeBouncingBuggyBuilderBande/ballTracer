@@ -31,6 +31,16 @@ color_bounds = {
     'white': {'lower': np.array([0, 0, 200]), 'upper': np.array([180, 30, 255])}
 }
 
+def calculate_distance(radius_pixels):
+    """
+    Calculate the distance to the ball based on its radius in pixels.
+    """
+    # Focal length of the camera (you need to calibrate this)
+    FOCAL_LENGTH_PIXELS = 1000  
+    # Known diameter of the golf ball in centimeters
+    BALL_DIAMETER_CM = 4.27  
+    
+    return (BALL_DIAMETER_CM * FOCAL_LENGTH_PIXELS) / (2 * radius_pixels)
 
 def get_min_contour_area(frame_width, frame_height):
     """
@@ -40,7 +50,7 @@ def get_min_contour_area(frame_width, frame_height):
     return (frame_width * frame_height) / 1000
 
 
-def process_frame(frame, color_bounds, chosen_color, min_contour_area):
+def process_frame(frame, color_bounds, chosen_color):
     """
     Apply Gaussian blur to the frame, convert it to the HSV color space, create a mask based on
     specified color bounds, and find contours within this mask.
@@ -70,6 +80,9 @@ def draw_contours(frame, cnts, min_contour_area):
                 center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
                 cv2.circle(frame, center, 5, (0, 0, 255), -1)
                 logger.info(f"Center coordinates: {center}")
+                
+                distance_cm = calculate_distance(radius)
+                logger.info(f"Distance to the ball: {distance_cm} cm")
     return frame
 
 
@@ -79,7 +92,7 @@ def main():
     and handle user input to quit. Processes frames to detect and annotate specified
     color objects and logs their information.
     """
-    chosen_color = 'blue'  # Change this based on the desired color to detect
+    chosen_color = 'white'  # Change this based on the desired color to detect
     cap = cv2.VideoCapture(0)
     while True:
         _, frame = cap.read()
@@ -91,7 +104,7 @@ def main():
         min_contour_area = get_min_contour_area(frame.shape[1], frame.shape[0])
 
         # Process the frame and draw contours
-        frame, cnts = process_frame(frame, color_bounds, chosen_color, min_contour_area)
+        frame, cnts = process_frame(frame, color_bounds, chosen_color)
         frame = draw_contours(frame, cnts, min_contour_area)
 
         cv2.imshow("Frame", frame)
